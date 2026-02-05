@@ -1,46 +1,73 @@
-const books = require("../dummy/CRUDBookNoDB");
+const sqlite3 = require("sqlite3");
+const db = new sqlite3.Database("./Database/books.sqlite");
+
+db.run(`CREATE TABLE IF NOT EXISTS books (
+    id INTEGER PRIMARY KEY,
+    title TEXT,
+    author TEXT
+)`);
 
 exports.getAllBooks = (req, res) => {
-  res.json(books);
+  db.all("SELECT * FROM books", [], (err, rows) => {
+    if (err) {
+      return res.status(500).send(err.message);
+    } else {
+      res.json(rows);
+    }
+  });
 };
+
 exports.getBookById = (req, res) => {
   const bookId = parseInt(req.params.id);
-  const book = books.find((b) => b.id === bookId);
-  if (!book) return res.status(404).send("Book not found");
-  res.json(book);
-};
-exports.createBook = (req, res) => {
-    if (books.find(b => b.title === req.body.title)) {
-        return  res.status(400).send("Book already exists");
+  db.get("SELECT * FROM books WHERE id = ?", [bookId], (err, row) => {
+    if (err) {
+      return res.status(500).send(err.message);
+    } else {
+      if (!row) {
+        return res.status(404).send("Book not found");
+      } else {
+        res.json(row);
+      }
     }
-  const book = {
-    id: books.length + 1,
-    title: req.body.title,
-    author: req.body.author,
-  };
-  books.push(book);
-  res.send(book);
+  });
 };
+
+exports.createBook = (req, res) => {
+  const book = req.body;
+  db.run(
+    "INSERT INTO books (title, author) VALUES (?, ?)",
+    [book.title, book.author],
+    function (err) {
+      if (err) {
+        return res.status(500).send(err.message);
+      }
+      res.status(201).json({ id: this.lastID, title: book.title, author: book.author });
+    }
+  );
+};
+
 exports.updateBook = (req, res) => {
-  const bookId = parseInt(req.params.id);
-  const book = books.find((b) => b.id === bookId);
-  if (!book) return res.status(404).send("Book not found");
-  book.title = req.body.title;
-  book.author = req.body.author;
-  res.send(book);
+  const book = req.body;
+  db.run(
+    "UPDATE books SET title = ?, author = ? WHERE id = ?",
+    [book.title, book.author, parseInt(req.params.id)],
+    function (err) {
+      if (err) {
+        return res.status(500).send(err.message);
+      } else {
+        res.status(200).send(book);
+      }
+    }
+  );
 };
+
 exports.deleteBook = (req, res) => {
   const bookId = parseInt(req.params.id);
-
-    const find_book = books.find(b => b.id === bookId);
-    console.log(find_book);
-    if(!find_book) {
-        console.log("Book not found");
+  db.run("DELETE FROM books WHERE id = ?", [bookId], function (err) {
+    if (err) {
+      return res.status(500).send(err.message);
+    } else {
+      res.status(204).send();
     }
-    
-
-  const bookIndex = books.findIndex((b) => b.id === bookId);
-  if (bookIndex === -1) return res.status(404).send("Book not found");
-  const deletedBook = books.splice(bookIndex, 1);
-  res.send(deletedBook);
+  });
 };
