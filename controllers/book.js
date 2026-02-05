@@ -16,7 +16,7 @@ exports.createBook = (req, res) => {
   const book = {
     id: books.length + 1,
     title: req.body.title,
-    autor: req.body.autor,
+    author: req.body.author,
   };
   books.push(book);
   res.send(book);
@@ -26,7 +26,7 @@ exports.updateBook = (req, res) => {
   const book = books.find((b) => b.id === bookId);
   if (!book) return res.status(404).send("Book not found");
   book.title = req.body.title;
-  book.autor = req.body.autor;
+  book.author = req.body.author;
   res.send(book);
 };
 exports.deleteBook = (req, res) => {
